@@ -1,0 +1,85 @@
+package com.example.lokasyonpaylasimi;
+
+import java.util.ArrayList;
+import android.os.Bundle;
+import android.provider.ContactsContract;
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.view.Menu;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
+
+public class KisiEkleActivity extends Activity {
+
+	ListView rehber;
+	String phoneNumber;
+	String name;
+	ArrayList <kisiler> liste = new ArrayList<kisiler>();
+	private Database veriTabani;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.kisi_ekle);
+		rehber = (ListView) findViewById(R.id.rehber);
+		
+		Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,null,null, null);
+		while (phones.moveToNext())
+		{
+		   name=phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+		   phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+		   kisiler a = new kisiler(name, phoneNumber,"0.0","0.0",false);
+		   liste.add(a);
+		  
+		}
+		phones.close();
+		// sıralama yapabiliriz		
+		ArrayAdapter <kisiler> veriAdaptoru=new ArrayAdapter<kisiler>
+        (this, android.R.layout.simple_list_item_1, android.R.id.text1, liste);
+        rehber.setAdapter(veriAdaptoru);	
+        
+        veriTabani = new Database(this);
+        
+        
+        rehber.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position,long id) {
+            	try {
+	            	ekleme(liste.get(position).getName(),liste.get(position).getNumara());
+	            	Toast.makeText(getApplicationContext(), liste.get(position).getName() + " eklendi", Toast.LENGTH_LONG).show();
+	            	
+	            	Intent a = new Intent(KisiEkleActivity.this,AnaSayfaActivity.class);
+					startActivity(a);
+            	}
+            	finally {
+            		veriTabani.close();
+            	}
+            }
+        });
+        
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.kisi_ekle, menu);
+		return true;
+	}
+	private void ekleme(String name,String numara){
+		SQLiteDatabase db = veriTabani.getWritableDatabase();
+		ContentValues cv = new ContentValues();
+		cv.put("isim", name);
+		cv.put("numara", numara);
+		cv.put("x", "0.0");
+		cv.put("y", "0.0");
+		cv.put("konumlumu", false);
+		db.insertOrThrow("Kisiler", null, cv);
+	}
+}
