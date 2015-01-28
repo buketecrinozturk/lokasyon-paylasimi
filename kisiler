@@ -1,0 +1,60 @@
+package com.example.lokasyonpaylasimi;
+
+public class kisiler {
+	
+	private String name;
+	private String numara;
+	private String x;
+	private String y;
+	private boolean konumlumu ;
+	
+	public kisiler() {
+		// TODO Auto-generated constructor stub
+	}
+	public kisiler(String name,String numara,String x,String y, boolean konumlumu) {
+		this.name      = name;
+		this.numara    = numara;
+		this.x         = x;
+		this.y         = y;
+		this.konumlumu = konumlumu;
+	}
+	
+	
+	// ----------------------------- get and set ------------------------
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getNumara() {
+		return numara;
+	}
+	public void setNumara(String numara) {
+		this.numara = numara;
+	}
+	public String getX() {
+		return x;
+	}
+	public void setX(String x) {
+		this.x = x;
+	}
+	public String getY() {
+		return y;
+	}
+	public void setY(String y) {
+		this.y = y;
+	}
+	public boolean isKonumlumu() {
+		return konumlumu;
+	}
+	public void setKonumlumu(boolean konumlumu) {
+		this.konumlumu = konumlumu;
+	}
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return getName() ;
+	}
+	
+}
