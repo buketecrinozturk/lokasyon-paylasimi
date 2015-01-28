@@ -1,0 +1,61 @@
+package com.example.lokasyonpaylasimi;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+
+public class HaritaActivity extends FragmentActivity {
+
+	private GoogleMap maps;
+	static kisiler aktifKisi = new kisiler();;
+			
+	public static void log (kisiler a) {
+		aktifKisi = a;
+	}
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.harita);
+		
+		if(maps == null) {
+			maps = ((SupportMapFragment)getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+			maps.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+			
+			if (!aktifKisi.isKonumlumu()) {
+			LatLng malatya = new LatLng(38.351396, 38.313298);
+	        maps.setMyLocationEnabled(true);
+	        maps.moveCamera(CameraUpdateFactory.newLatLngZoom(malatya, 13));
+	        maps.addMarker(new MarkerOptions()
+	                .title("Malatya")
+	                .snippet("Malatya")
+	                .position(malatya));
+			}
+			else {
+				double X = Double.parseDouble(aktifKisi.getX()); 
+				double Y = Double.parseDouble(aktifKisi.getY()); 
+				
+				LatLng konum = new LatLng(X,Y);
+		        maps.setMyLocationEnabled(true);
+		        maps.moveCamera(CameraUpdateFactory.newLatLngZoom(konum, 13));
+		        maps.addMarker(new MarkerOptions()
+		                .title("Malatya")
+		                .snippet("Malatya")
+		                .position(konum));
+			}
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.harita, menu);
+		return true;
+	}
+}
