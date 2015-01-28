@@ -1,0 +1,217 @@
+package com.example.lokasyonpaylasimi;
+
+import java.util.ArrayList;
+import com.google.android.gms.location.LocationListener;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.telephony.SmsManager;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
+
+public class AnaSayfaActivity extends Activity implements LocationListener{
+
+	Button kisiSil;
+	Button mesajGonder;
+	
+	ImageButton kisiEkle;
+	ImageButton haritayiGoster;
+	ListView listViewKisiler;
+	
+	String sms; 
+	private Database veriTabani;
+	private ArrayList<kisiler> liste = new ArrayList<kisiler>();
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.ana_sayfa);
+		
+		kisiEkle        = (ImageButton) findViewById(R.id.kisiEkle);
+		haritayiGoster  = (ImageButton) findViewById(R.id.haritayaGit);
+		listViewKisiler = (ListView)    findViewById(R.id.listViewKisiler);
+		
+		veriTabani = new Database(this);
+	 	bilgileriOku();
+		
+		ArrayAdapter <kisiler> veriAdaptoru=new ArrayAdapter<kisiler>
+        (this, android.R.layout.simple_list_item_1, android.R.id.text1, liste);
+        listViewKisiler.setAdapter(veriAdaptoru);	
+        
+        
+        listViewKisiler.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int position,long id) {
+            	
+            	final Dialog dialog = new Dialog(AnaSayfaActivity.this);
+    	        dialog.setContentView(R.layout.dialog);
+    	        dialog.setTitle(liste.get(position).getName() + " " + liste.get(position).getNumara() + " " + liste.get(position).getX());
+    	        dialog.show();
+    	        
+    			Button iptal  = (Button) dialog.findViewById(R.id.iptal);
+    			iptal.setOnClickListener(new OnClickListener() {
+    				@Override
+    				public void onClick(View v) {
+    					SQLiteDatabase db = veriTabani.getReadableDatabase();
+    					Cursor c = db.rawQuery("SELECT * FROM Kisiler WHERE TRIM(numara) = '"+liste.get(position).getNumara().trim()+"'", null);
+    					Toast.makeText(getApplicationContext(), c.getString(c.getColumnIndex("x")), Toast.LENGTH_SHORT).show();
+    					
+    					dialog.dismiss();
+    				}
+    			});
+    			
+    			Button kisiSil  = (Button) dialog.findViewById(R.id.kisiyiSil);
+    			kisiSil.setOnClickListener(new View.OnClickListener() {
+    				@Override
+    				public void onClick(View v) {
+    					SQLiteDatabase db = veriTabani.getWritableDatabase();
+    				 	db.delete("kisiler", "numara" + "=?", new String[] {liste.get(position).getNumara()});
+    					db.close();
+    					Toast.makeText(getApplicationContext(), liste.get(position).getName() + " Silindi", Toast.LENGTH_SHORT).show();
+    					liste.remove(position);
+    					
+    					ArrayAdapter <kisiler> veriAdaptoru=new ArrayAdapter<kisiler> (AnaSayfaActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, liste);
+    			        listViewKisiler.setAdapter(veriAdaptoru);
+    			        
+    					dialog.dismiss(); // dialogu kapatıyor
+    				}
+    			});
+
+    			
+    			Button mesajGonder = (Button) dialog.findViewById(R.id.mesajGonder);
+    			mesajGonder.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+		                
+		                try {
+		                	
+		                	LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		                    Criteria criteria = new Criteria();       
+		            	    String provider = lm.getBestProvider(criteria, false);
+		            	    Location location = lm.getLastKnownLocation(provider);
+		            	    
+		            	    if (location != null) {
+		                		onLocationChanged(location);
+		            		}
+		            	    
+		                    SmsManager smsManager = SmsManager.getDefault();
+		                    smsManager.sendTextMessage(liste.get(position).getNumara(), null, sms, null, null);
+		                    Toast.makeText(getApplicationContext(),"SMS gönderildi", Toast.LENGTH_LONG).show();
+		                    dialog.dismiss();
+		                    
+		                    
+		                  } catch (Exception e) {
+		                    Toast.makeText(getApplicationContext(),"SMS gitmedi lütfen GPS i açınız", Toast.LENGTH_LONG).show();
+		                    e.printStackTrace();
+		                  }
+					}
+				});
+    			
+    			Button konumuGor = (Button) dialog.findViewById(R.id.konumuGor);
+    			konumuGor.setOnClickListener(new View.OnClickListener() {		
+					@Override
+					public void onClick(View arg0) {
+						if(liste.get(position).isKonumlumu() ) {
+							HaritaActivity.log(liste.get(position));
+							
+							Intent i = new Intent(AnaSayfaActivity.this,HaritaActivity.class);
+							startActivity(i);
+							
+						}
+						else {
+							Toast.makeText(getApplicationContext(), "Kişinin Konumu Bilinmemektedir.", Toast.LENGTH_LONG).show();
+						}	
+					}
+				});
+    			
+            } // item selected end
+        }); // dialog end
+        
+		
+		haritayiGoster.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent i = new Intent(AnaSayfaActivity.this,HaritaActivity.class);
+				startActivity(i);
+			}
+		});
+		
+		kisiEkle.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent i = new Intent(AnaSayfaActivity.this,KisiEkleActivity.class);
+				startActivity(i);
+			}
+		});
+
+	} // end onCreate metodu
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.ana_sayfa, menu);
+		return true;
+	}
+	
+	
+	private String [] sutunlar = {"isim","numara","x","y","konumlumu"};
+	private void bilgileriOku(){
+		
+		SQLiteDatabase db = veriTabani.getReadableDatabase();
+		Cursor okunanlar = db.query("Kisiler", sutunlar, null,null,null,null,null);
+		while(okunanlar.moveToNext()) {
+			kisiler a = new kisiler(okunanlar.getString(okunanlar.getColumnIndex("isim")),okunanlar.getString(okunanlar.getColumnIndex("numara")),okunanlar.getString(okunanlar.getColumnIndex("x")) , okunanlar.getString(okunanlar.getColumnIndex("y")),false);
+			liste.add(a);
+		}
+	}
+
+
+	@Override
+	public void onLocationChanged(Location l) {
+		l.getLatitude();
+		l.getLongitude();
+		
+		sms = "Konumum/" + l.getLatitude() +"/"+ l.getLongitude();
+	}
+	
+	
+	
+	@Override
+	public void onBackPressed() {
+	    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+	    builder.setMessage("Çıkmak istediğinize emin misiniz?")
+	           .setCancelable(false)
+	           .setPositiveButton("Evet", new DialogInterface.OnClickListener() {
+	               public void onClick(DialogInterface dialog, int id) {
+	                	AnaSayfaActivity.this.moveTaskToBack(true);
+	               }
+	           })
+	           .setNegativeButton("Hayır", new DialogInterface.OnClickListener() {
+	               public void onClick(DialogInterface dialog, int id) {
+	                    dialog.cancel();
+	               }
+	           });
+	    AlertDialog alert = builder.create();
+	    alert.show();
+
+	}
+}
