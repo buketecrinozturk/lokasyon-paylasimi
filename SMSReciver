@@ -1,0 +1,65 @@
+package com.example.lokasyonpaylasimi;
+
+import android.content.BroadcastReceiver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.telephony.SmsMessage;
+import android.widget.Toast;
+
+public class SMSReciver extends BroadcastReceiver{
+	
+	private Database veriTabani;
+	
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		String numara;
+		String mesaj ;
+		
+		Bundle myBundle = intent.getExtras();
+        SmsMessage [] messages = null;
+        String strMessage = " ";
+
+        if (myBundle != null)
+        {
+            Object [] pdus = (Object[]) myBundle.get("pdus");
+            messages = new SmsMessage[1];
+
+            messages[0] = SmsMessage.createFromPdu((byte[]) pdus[0]);
+            numara =  messages[0].getOriginatingAddress();
+            mesaj  =  messages[0].getMessageBody();
+            
+            if (mesaj.substring(0, 7).equals("Konumum")){
+            	veriTabani = new Database(context);
+	            strMessage = smsCozumle(numara,mesaj);
+	            Toast.makeText(context, strMessage, Toast.LENGTH_LONG).show();  
+            } 
+               
+        }else {
+        	 Toast.makeText(context, "else", Toast.LENGTH_LONG).show();
+        }
+	}
+	
+	private String smsCozumle(String numara1,String mesaj){
+		String numara = numara1.substring(2);
+		String [] cozumle = mesaj.split("/");
+		String a = "";
+		for (int i = 0 ; i<cozumle.length;i++){
+			a += i + " ; " + cozumle[i] + " "+ numara + " \n";
+		}
+		
+		String X = cozumle[1]; 
+		String Y = cozumle[2]; 
+		
+		SQLiteDatabase db = veriTabani.getWritableDatabase();
+		ContentValues cv = new ContentValues();
+		cv.put("x", X);
+		cv.put("y", Y);
+		cv.put("konumlumu", true);
+		db.update("Kisiler", cv, "numara=" + numara, null); 
+		
+		return a;
+	}
+}
